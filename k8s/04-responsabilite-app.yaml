@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: responsabilite-service
+  namespace: restauration
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: responsabilite-service
+  template:
+    metadata:
+      labels:
+        app: responsabilite-service
+    spec:
+      containers:
+        - name: responsabilite-service
+          # Image construite localement avec "docker build" puis importée
+          # dans containerd via le script k8s/build-and-import.sh
+          # (voir README.md, Phase 4). "Never" est volontaire : il n'existe
+          # aucun registre externe ici, l'image DOIT déjà être présente
+          # localement (import manuel) - une tentative de pull échouerait
+          # silencieusement en "IfNotPresent" si le tag était mal orthographié.
+          image: responsabilite-service:1.0.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app-config
+          env:
+            # DB_USER / DB_PASSWORD : lus par configure-mysql.cli au démarrage
+            # de WildFly (expression ${env.DB_USER:changeme} dans le .cli).
+            # On mappe les clés du Secret (nommées MYSQL_USER/MYSQL_PASSWORD,
+            # convention de l'image mysql officielle) vers ces noms-là.
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: responsabilite-db-secret
+                  key: MYSQL_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: responsabilite-db-secret
+                  key: MYSQL_PASSWORD
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          # startupProbe : laisse jusqu'à 30 x 10s = 5 min pour le premier
+          # démarrage de WildFly (déploiement du .war + connexion DB inclus).
+          # Tant qu'il n'a pas réussi une fois, readiness/liveness ci-dessous
+          # ne sont PAS évalués du tout - donc pas de kill prématuré possible.
+          startupProbe:
+            httpGet:
+              path: /responsabilite-service/api/plats
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /responsabilite-service/api/plats
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /responsabilite-service/api/plats
+              port: 8080
+            periodSeconds: 20
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: responsabilite-service
+  namespace: restauration
+spec:
+  selector:
+    app: responsabilite-service
+  ports:
+    - port: 8080
+      targetPort: 8080

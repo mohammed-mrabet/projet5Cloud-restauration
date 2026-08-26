@@ -1,0 +1,86 @@
+# =========================================================
+# Base de données du service "Responsabilité"
+# =========================================================
+# Persistance : PVC avec accès dynamique via le StorageClass "local-path"
+# fourni PAR DÉFAUT par K3s (local-path-provisioner) — aucune création
+# manuelle de PersistentVolume n'est nécessaire (exigence Phase 4 :
+# "Persistance pour garantir la sauvegarde des données MySQL lors du
+# redémarrage des Pods").
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: responsabilite-db-pvc
+  namespace: restauration
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: responsabilite-db
+  namespace: restauration
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: responsabilite-db
+  strategy:
+    type: Recreate # évite 2 instances MySQL simultanées sur le même volume
+  template:
+    metadata:
+      labels:
+        app: responsabilite-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          ports:
+            - containerPort: 3306
+          envFrom:
+            - secretRef:
+                name: responsabilite-db-secret
+            - configMapRef:
+                name: responsabilite-db-config
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 30
+            periodSeconds: 20
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: responsabilite-db-pvc
+---
+# Nom du Service = "responsabilite-db", EXACTEMENT le même nom que le conteneur
+# Docker Compose : le code Java (persistence.xml) n'a donc rien à changer.
+apiVersion: v1
+kind: Service
+metadata:
+  name: responsabilite-db
+  namespace: restauration
+spec:
+  selector:
+    app: responsabilite-db
+  ports:
+    - port: 3306
+      targetPort: 3306

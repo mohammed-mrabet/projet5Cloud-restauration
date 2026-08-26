@@ -1,0 +1,46 @@
+# Phase 1 — Livrable du service "Paiement" pris isolément.
+# Lancer avec :  cd paiement-service && docker compose up --build
+#
+# Les mots de passe viennent du fichier .env (non commité) situé dans ce
+# même dossier. Copiez .env.example en .env et adaptez les valeurs si besoin.
+
+services:
+  paiement-db:
+    image: mysql:8.4
+    container_name: paiement-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: paiement_db
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - paiement_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - restauration-net
+
+  paiement-service:
+    image: paiement-service:1.0.0
+    build: .
+    container_name: paiement-service
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      paiement-db:
+        condition: service_healthy
+    ports:
+      - "8083:8080"
+    networks:
+      - restauration-net
+
+volumes:
+  paiement_data:
+
+networks:
+  restauration-net:
+    driver: bridge

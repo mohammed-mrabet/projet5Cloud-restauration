@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: commandes-service
+  namespace: restauration
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: commandes-service
+  template:
+    metadata:
+      labels:
+        app: commandes-service
+    spec:
+      containers:
+        - name: commandes-service
+          image: commandes-service:1.0.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app-config
+          env:
+            # DB_USER / DB_PASSWORD : lus par configure-mysql.cli au démarrage
+            # de WildFly (expression ${env.DB_USER:changeme} dans le .cli).
+            # On mappe les clés du Secret (nommées MYSQL_USER/MYSQL_PASSWORD,
+            # convention de l'image mysql officielle) vers ces noms-là.
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: commandes-db-secret
+                  key: MYSQL_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: commandes-db-secret
+                  key: MYSQL_PASSWORD
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          # startupProbe : laisse jusqu'à 30 x 10s = 5 min pour le premier
+          # démarrage de WildFly. Tant qu'il n'a pas réussi une fois,
+          # readiness/liveness ne sont PAS évalués - pas de kill prématuré.
+          startupProbe:
+            httpGet:
+              path: /commandes-service/api/commandes
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /commandes-service/api/commandes
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /commandes-service/api/commandes
+              port: 8080
+            periodSeconds: 20
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: commandes-service
+  namespace: restauration
+spec:
+  selector:
+    app: commandes-service
+  ports:
+    - port: 8080
+      targetPort: 8080

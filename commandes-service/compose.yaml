@@ -1,0 +1,51 @@
+# Phase 1 — Livrable du service "Commandes" pris isolément.
+# NOTE : en isolation, les appels REST internes vers "responsabilite-service"
+# et "paiement-service" échoueront (ces conteneurs n'existent pas ici) -
+# c'est normal et attendu pour ce livrable. Le scénario complet inter-services
+# ne fonctionne qu'à partir de la Phase 2 (compose.yaml maître avec "include").
+#
+# Lancer avec :  cd commandes-service && docker compose up --build
+#
+# Les mots de passe viennent du fichier .env (non commité) situé dans ce
+# même dossier. Copiez .env.example en .env et adaptez les valeurs si besoin.
+
+services:
+  commandes-db:
+    image: mysql:8.4
+    container_name: commandes-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: commandes_db
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - commandes_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - restauration-net
+
+  commandes-service:
+    image: commandes-service:1.0.0
+    build: .
+    container_name: commandes-service
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      commandes-db:
+        condition: service_healthy
+    ports:
+      - "8082:8080"
+    networks:
+      - restauration-net
+
+volumes:
+  commandes_data:
+
+networks:
+  restauration-net:
+    driver: bridge

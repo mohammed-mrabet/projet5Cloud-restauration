@@ -1,0 +1,9 @@
+embed-server --std-out=echo --server-config=standalone.xml
+
+module add --name=com.mysql --resources=/tmp/mysql-connector-j.jar
+
+/subsystem=datasources/jdbc-driver=mysql:add(driver-name=mysql, driver-module-name=com.mysql, driver-class-name=com.mysql.cj.jdbc.Driver)
+
+data-source add --name=CommandesDS --jndi-name=java:jboss/datasources/CommandesDS --driver-name=mysql --connection-url="jdbc:mysql://commandes-db:3306/commandes_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" --user-name=${env.DB_USER:changeme} --password=${env.DB_PASSWORD:changeme} --jta=false --use-ccm=true --enabled=true
+
+stop-embedded-server

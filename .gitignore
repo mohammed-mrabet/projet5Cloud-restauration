@@ -1,0 +1,27 @@
+# Build Maven
+target/
+*.class
+
+# Docker
+*.tar
+
+# Secrets (mots de passe MySQL) - NE JAMAIS COMMITER
+.env
+
+# Vagrant / VirtualBox
+.vagrant/
+*.box
+node-token
+k3s.yaml
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Systeme
+.DS_Store
+Thumbs.db

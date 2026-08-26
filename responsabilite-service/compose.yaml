@@ -1,0 +1,50 @@
+# Phase 1 — Livrable du service "Responsabilité" pris isolément.
+# Lancer avec :  cd responsabilite-service && docker compose up --build
+#
+# Vérifier ensuite : http://localhost:8081/responsabilite-service/api/plats
+#
+# Les mots de passe viennent du fichier .env (non commité) situé dans ce
+# même dossier. Copiez .env.example en .env et adaptez les valeurs si besoin.
+
+services:
+  responsabilite-db:
+    image: mysql:8.4
+    container_name: responsabilite-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: responsabilite_db
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - responsabilite_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - restauration-net
+
+  responsabilite-service:
+    image: responsabilite-service:1.0.0
+    build: .
+    container_name: responsabilite-service
+    environment:
+      # Lus par configure-mysql.cli au DEMARRAGE du conteneur (${env.DB_USER:...}
+      # dans le fichier .cli) - le mot de passe n'est donc plus gravé dans l'image.
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      responsabilite-db:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+    networks:
+      - restauration-net
+
+volumes:
+  responsabilite_data:
+
+networks:
+  restauration-net:
+    driver: bridge

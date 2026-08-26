@@ -1,0 +1,15 @@
+﻿{
+  "spec": {
+    "template": {
+      "spec": {
+        "initContainers": [
+          {
+            "name": "wait-for-db",
+            "image": "mysql:8.4",
+            "command": ["sh", "-c", "until mysqladmin ping -h commandes-db -P 3306 --silent; do echo 'attente de commandes-db...'; sleep 3; done"]
+          }
+        ]
+      }
+    }
+  }
+}

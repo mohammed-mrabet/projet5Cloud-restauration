@@ -1,0 +1,45 @@
+# =========================================================
+# Ingress — exigence Phase 4 : "Mise en place d'un Ingress Controller
+# pour router le trafic HTTP(S) vers vos différents microservices en
+# fonction du chemin".
+#
+# K3s embarque Traefik comme Ingress Controller par défaut : aucune
+# installation supplémentaire n'est nécessaire (ingressClassName: traefik).
+#
+# Le chemin correspond directement au contexte de déploiement du WAR
+# (ex: /responsabilite-service/... est servi par WildFly dans le Pod
+# "responsabilite-service"), donc aucune réécriture de chemin n'est requise.
+# =========================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: restauration-ingress
+  namespace: restauration
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: restauration.local
+      http:
+        paths:
+          - path: /responsabilite-service
+            pathType: Prefix
+            backend:
+              service:
+                name: responsabilite-service
+                port:
+                  number: 8080
+          - path: /commandes-service
+            pathType: Prefix
+            backend:
+              service:
+                name: commandes-service
+                port:
+                  number: 8080
+          - path: /paiement-service
+            pathType: Prefix
+            backend:
+              service:
+                name: paiement-service
+                port:
+                  number: 8080

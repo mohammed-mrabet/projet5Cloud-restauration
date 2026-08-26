@@ -1,0 +1,17 @@
+﻿{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "name": "paiement-service",
+            "startupProbe": {
+              "httpGet": {"path": "/paiement-service/api/paiements", "port": 8080},
+              "initialDelaySeconds": 10, "periodSeconds": 10, "timeoutSeconds": 5, "failureThreshold": 60
+            }
+          }
+        ]
+      }
+    }
+  }
+}

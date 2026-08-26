@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
+             version="3.0">
+
+  <persistence-unit name="responsabilitePU" transaction-type="RESOURCE_LOCAL">
+    <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+    <!-- Référence la datasource "ResponsabiliteDS" créée par configure-mysql.cli
+         (voir Dockerfile). "non-jta-data-source" car RESOURCE_LOCAL : on gère
+         les transactions nous-mêmes via em.getTransaction() dans le code Java,
+         WildFly ne s'en occupe pas. -->
+    <non-jta-data-source>java:jboss/datasources/ResponsabiliteDS</non-jta-data-source>
+
+    <class>ma.ump.responsabilite.entity.Produit</class>
+    <class>ma.ump.responsabilite.entity.Plat</class>
+    <class>ma.ump.responsabilite.entity.Menu</class>
+    <class>ma.ump.responsabilite.entity.RegimeSpecial</class>
+
+    <properties>
+      <!-- Le dialecte est maintenant auto-détecté par Hibernate à partir de la
+           vraie connexion MySQL fournie par la datasource - plus besoin de le
+           préciser à la main. -->
+      <property name="hibernate.hbm2ddl.auto" value="update"/>
+      <property name="hibernate.show_sql" value="false"/>
+    </properties>
+  </persistence-unit>
+</persistence>

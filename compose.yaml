@@ -1,0 +1,31 @@
+# =========================================================
+# Phase 2 — Compose maître du Projet 5 "Restauration universitaire"
+# =========================================================
+# Regroupe les 3 services via la directive moderne "include" (Docker Compose
+# v2.20+). Chaque service garde son propre compose.yaml (réutilisable
+# isolément pour la Phase 1), et ce fichier les assemble sur un même réseau
+# Docker pour activer la communication Backend-to-Backend :
+#   - commandes-service  --HTTP-->  responsabilite-service (vérif. dispo/prix)
+#   - commandes-service  --HTTP-->  paiement-service        (traitement paiement)
+#
+# Lancer depuis la racine du projet :
+#   docker compose up --build
+#
+# Tester le scénario complet, par exemple :
+#   curl -X POST http://localhost:8082/commandes-service/api/commandes \
+#        -H "Content-Type: application/json" \
+#        -d '{"etudiantId":1,"type":"SUR_PLACE","lignes":[{"platId":1,"quantite":2}]}'
+
+include:
+  - responsabilite-service/compose.yaml
+  - commandes-service/compose.yaml
+  - paiement-service/compose.yaml
+
+# Déclaré ici une seule fois ; chaque fichier inclus référence ce même réseau
+# par son nom ("restauration-net"). Si votre version de Docker Compose refuse
+# de fusionner les définitions de réseau dupliquées entre fichiers, il suffit
+# de supprimer le bloc "networks:" de CHAQUE compose.yaml de service :
+# celui défini ici sera alors hérité automatiquement par tous les services inclus.
+networks:
+  restauration-net:
+    driver: bridge

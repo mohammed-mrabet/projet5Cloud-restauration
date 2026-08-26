@@ -1,0 +1,25 @@
+﻿{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "name": "commandes-service",
+            "startupProbe": {
+              "httpGet": {"path": "/commandes-service/api/commandes", "port": 8080},
+              "initialDelaySeconds": 10, "periodSeconds": 10, "timeoutSeconds": 5, "failureThreshold": 30
+            },
+            "livenessProbe": {
+              "httpGet": {"path": "/commandes-service/api/commandes", "port": 8080},
+              "initialDelaySeconds": 0, "periodSeconds": 20, "timeoutSeconds": 5, "failureThreshold": 3
+            },
+            "readinessProbe": {
+              "httpGet": {"path": "/commandes-service/api/commandes", "port": 8080},
+              "initialDelaySeconds": 0, "periodSeconds": 15, "timeoutSeconds": 5, "failureThreshold": 3
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+# =========================================================
+# ConfigMaps — variables d'environnement NON sensibles (exigence Phase 4 :
+# "ConfigMaps pour les variables d'environnement"). Le nom de la base de
+# données va ici ; les identifiants/mots de passe restent dans les Secrets.
+# =========================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: responsabilite-db-config
+  namespace: restauration
+data:
+  MYSQL_DATABASE: responsabilite_db
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: commandes-db-config
+  namespace: restauration
+data:
+  MYSQL_DATABASE: commandes_db
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: paiement-db-config
+  namespace: restauration
+data:
+  MYSQL_DATABASE: paiement_db
+---
+# Configuration générique injectée dans les 3 conteneurs applicatifs
+# (WildFly). Le code Java actuel ne la lit pas encore via System.getenv(),
+# mais elle est bien injectée dans les Pods : vous pouvez l'exploiter pour
+# aller plus loin (ex: lire LOG_LEVEL pour ajuster la verbosité applicative).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: restauration
+data:
+  APP_ENV: "production"
+  TZ: "Africa/Casablanca"
+  LOG_LEVEL: "INFO"
